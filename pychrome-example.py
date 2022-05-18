@@ -9,9 +9,34 @@ with remote debugging as follows:
 You can also run in headless mode, which doesn't require a graphical
 user interface by supplying --headless.
 """
-
+import json
 import pprint
+from typing import List
+
 import pychrome
+import csv
+
+
+def read_from_file() -> List[str]:
+    # Reading from file
+    rows = []
+    with open("input_urls.txt", 'r') as file:
+        for line in file:
+            rows.append(line)
+    return rows
+
+
+# output_header_fields = ['page-url', 'google-analytics-enabled','anonymize-ip']
+output_filename = "output.csv"
+
+
+def write_to_file(page_url: str, ga_enabled: bool, anonymize_ip: bool):
+    with open(output_filename, 'a') as csvfile:
+        # creating a csv writer object
+        csvwriter = csv.writer(csvfile)
+
+        # writing the fields
+        csvwriter.writerow([page_url, ga_enabled, anonymize_ip])
 
 
 class Crawler:
@@ -31,10 +56,10 @@ class Crawler:
         self.tab.Network.requestWillBeSent = self._event_request_will_be_sent
         self.tab.Network.responseReceived = self._event_response_received
         self.tab.Page.loadEventFired = self._event_load_event_fired
-        
+
         # Start our tab after callbacks have been registered.
         self.tab.start()
-        
+
         # Enable network notifications for all request/response so our
         # callbacks actually receive some data.
         self.tab.Network.enable()
@@ -42,25 +67,38 @@ class Crawler:
         # Enable page domain notifications so our load_event_fired
         # callback is called when the page is loaded.
         self.tab.Page.enable()
-        
+
         # Navigate to a specific page
         self.tab.Page.navigate(url=url, _timeout=15)
-        
+
         # We wait for our load event to be fired (see `_event_load_event_fired`)
         while not self._is_loaded:
             self.tab.wait(1)
-        
+
         # Wait some time for events, after the page has been loaded to look
         # for further requests from JavaScript
         self.tab.wait(10)
-        
+
         # Run a JavaScript expression on the page.
         # If Google Analytics is included in the page, this expression will tell you
         # whether the site owner's wanted to enable anonymize IP. The expression will
         # fail with a JavaScript exception if Google Analytics is not in use.
         result = self.tab.Runtime.evaluate(expression="ga.getAll()[0].get('anonymizeIp')")
-        print("result", result)
-        
+        print(result)
+        if result is True:
+            print("anonymizeIp enabled")
+            write_to_file(page_url=url, ga_enabled=True, anonymize_ip=True)
+
+        else:
+            if result['result']['type'] == "undefined":
+                print("Google analytics enabled but anonymizeIp was not in use")
+                write_to_file(page_url=url, ga_enabled=True, anonymize_ip=False)
+            else:
+                print("Google analytics was not in use")
+                write_to_file(page_url=url, ga_enabled=False, anonymize_ip=False)
+
+
+
         # Stop the tab
         self.tab.stop()
 
@@ -97,9 +135,12 @@ class Crawler:
 
 def main():
     c = Crawler()
-    c.crawl_page('https://privacyscore.org/')
+
+    urls = read_from_file()
+    # Crawling for each url
+    for url in urls:
+        c.crawl_page(url)
 
 
 if __name__ == '__main__':
     main()
-
