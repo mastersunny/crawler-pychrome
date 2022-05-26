@@ -16,6 +16,16 @@ import pychrome
 import csv
 from urllib.parse import urlparse
 from urllib.parse import parse_qs
+from adblockparser import AdblockRules
+
+
+def read_raw_rules():
+    # Reading from file
+    raw_rules = []
+    with open("easylist.txt", 'r') as file:
+        for line in file:
+            raw_rules.append(line)
+    return raw_rules
 
 
 def read_from_input_txt() -> List[str]:
@@ -47,12 +57,13 @@ class Crawler:
         self.ga_enabled = False
         self.anonymize_ip = False
 
-    def crawl_page(self, url):
+    def crawl_page(self, url, rules):
         # Initialize _is_loaded variable to False. It will be set to True
         # when the loadEventFired event occurs.
         self._is_loaded = False
         self.ga_enabled = False
         self.anonymize_ip = False
+        self.rules = rules
 
         # Create a tab
         self.tab = self.browser.new_tab()
@@ -120,6 +131,7 @@ class Crawler:
         pprint.pprint(request)
 
         self.check_anonymize_ip(request)
+        self.check_third_party(request)
 
     def _event_response_received(self, response, **kwargs):
         """Will be called when a response is received.
@@ -139,30 +151,36 @@ class Crawler:
         self._is_loaded = True
 
     def check_anonymize_ip(self, request):
+        url = request['url']
         try:
-            url = request['url']
             parsed_url = urlparse(url)
             aip = parse_qs(parsed_url.query)['aip'][0]
-            print("aip ", aip)
             if int(aip) == 1:
                 self.ga_enabled = True
                 self.anonymize_ip = True
-        except Exception as ex:
-            print(ex)
+        except Exception:
+            print("aip is not present in the current url ", url)
+
+    def check_third_party(self, request):
+        url = request['url']
+        print("should block", self.rules.should_block(url))
 
 
 def main():
     c = Crawler()
 
     urls = read_from_input_txt()
+    raw_rules = read_raw_rules()
+    rules = AdblockRules(raw_rules)
     # Crawling for each url and check if google analytics is enabled
     for url in urls:
         try:
-            c.crawl_page(url)
+            c.crawl_page(url, rules)
             write_to_file(page_url=url, ga_enabled=c.ga_enabled, anonymize_ip=c.anonymize_ip)
         except Exception as ex:
+            print(ex)
             pass
 
- 
+
 if __name__ == '__main__':
     main()
