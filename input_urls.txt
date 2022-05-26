@@ -1,11 +1,4 @@
 https://medium.com/
 https://developer.mozilla.org
-https://wordpress.org
-https://codegrepper.com
-https://getbootstrap.com
-https://linkedin.com
-https://fiverr.com
-https://geeksforgeeks.org
-https://themeforest.net
-https://www.canva.com/
+
 

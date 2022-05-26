@@ -90,7 +90,7 @@ class Crawler:
         # fail with a JavaScript exception if Google Analytics is not in use.
         result = self.tab.Runtime.evaluate(expression="ga.getAll()[0].get('anonymizeIp')")
         print(result)
-        if result is True:
+        if result['result']['value']:
             self.ga_enabled = True
             print("anonymizeIp enabled")
         else:
@@ -145,7 +145,7 @@ class Crawler:
             aip = parse_qs(parsed_url.query)['aip'][0]
             print("aip ", aip)
             if int(aip) == 1:
-                print("aip 2", aip)
+                self.ga_enabled = True
                 self.anonymize_ip = True
         except Exception as ex:
             print(ex)
