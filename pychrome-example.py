@@ -131,7 +131,8 @@ class Crawler:
         pprint.pprint(request)
 
         self.check_anonymize_ip(request)
-        self.check_third_party(request)
+        self.check_advertising_tracker(request)
+        self.check_non_advertising_tracker(request)
 
     def _event_response_received(self, response, **kwargs):
         """Will be called when a response is received.
@@ -161,9 +162,13 @@ class Crawler:
         except Exception:
             print("aip is not present in the current url ", url)
 
-    def check_third_party(self, request):
+    def check_advertising_tracker(self, request):
         url = request['url']
-        print("should block", self.rules.should_block(url))
+        print("should block advertising tracker ", self.rules.should_block(url))
+
+    def check_non_advertising_tracker(self, request):
+        url = request['url']
+        print("should block non advertising tracker ", self.rules.should_block(url))
 
 
 def main():
