@@ -184,6 +184,7 @@ def main():
             write_to_file(page_url=url, ga_enabled=c.ga_enabled, anonymize_ip=c.anonymize_ip)
         except Exception as ex:
             print(ex)
+            write_to_file(page_url=url, ga_enabled=c.ga_enabled, anonymize_ip=c.anonymize_ip)
             pass
 
 
